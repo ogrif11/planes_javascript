@@ -96,6 +96,7 @@ function init_engine(debug){
 						if(plane.arrives_at < gameTime){
 							if(plane.arrives_at > 0){
 								engine.debug("Plane " + plane.id + " is landing at " + ap.name + " (arrival time " + plane.arrives_at + ")");
+								plane.arrives_at = 0;
 							}else{
 								engine.debug("Plane " + plane.id + " is grounded at " + ap.name);
 							}
@@ -132,6 +133,9 @@ function init_engine(debug){
 		p.jobs_onboard.push({"type":"people",name:"Fred",gender:"Male"});
 		p.jobs_onboard.push({"type":"people",name:"Wilma",gender:"Female"});
 		ps.push(p);
+		var now = new Date();
+		var q = {"id":2,"model":"Cessna","jobs_onboard":[],"itinerary":[],"next_airport":1,"arrives_at":now.getTime() + 10000,"capacity_people":2,"capacity_cargo":0};
+		ps.push(q);
 		var m = game_state.metadata;
 		m.world_start_time = Date.now();
 		m.simulation_start_time = Date.now();
