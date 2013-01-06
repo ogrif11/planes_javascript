@@ -5,8 +5,22 @@
 	<title>Document</title>
 	<script src="helpers.js"></script>
 	<script src="engine.js"></script>
+	<!--interface uses jquery -->
+	<script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>
+	<script src="interface.js"></script>
+	<style type="text/css">
+	.plane_summary{
+		padding-bottom: 20px;
+	}
+	</style>
 </head>
 <body>
+	<div class="game_window">
+		<div class="planes"></div><br />
+		Cash on Hand: <div class="money_available"></div>
+		<div class="last_log"></div>
+		<div class="log" style="height: 200px; overflow: scroll"></div>
+	</div>
 	
 </body>
 </html>
