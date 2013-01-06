@@ -16,3 +16,6 @@ function convert_severity(severity_int){
 function isArray(obj) {
 return obj.constructor == Array;
 }
+function getRandomInt (min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}

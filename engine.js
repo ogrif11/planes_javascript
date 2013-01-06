@@ -1,5 +1,5 @@
 var engine;
-var lookup;
+
 var output_debug_messages = true;
 if(typeof(engine) == "undefined"){
 	if(init_engine(output_debug_messages)){
@@ -14,48 +14,18 @@ if(typeof(engine) == "undefined"){
 }
 function init_engine(debug){
 	engine = {};
-	lookup = {};
 	engine.debug_enabled = false;
 	engine.initialised = true;
 	engine.gameTime = 0;
-	engine.logging_callback = false; //allocate a function to call it on log.
+	engine.callbacks = {};
+	engine.callbacks.logging_callback = false; //allocate a function to call it on log.
+	engine.callbacks.new_jobs_callback = false;
+	engine.callbacks.plane_landed_callback = false;
 	if(debug){
 		engine.debug_enabled = true;
 		console.log("Debugger enabled.");
 	}
-	lookup.lookup_airport_by_id = function(id){
-		var ap=false;
-		engine.state_object.airports.forEach(function(a){
-			if(a.id == id){
-				ap=a;
-				return;
-			}
-		});
-		return ap;
-	};
-	lookup.lookup_plane_by_id = function(id){
-		var plane = false;
-		engine.state_object.planes.forEach(function(p){
-			if(p.id == id){
-				plane = p;
-				return;
-			}
-		});
-		return plane;
-	};
-	lookup.get_flight_time = function(flight_distance, plane){
-		return flight_distance / plane.speed / engine.state_object.plane_base_speed;
-	};
-	lookup.get_flight_cost = function(flight_distance, plane){
-		return flight_distance / plane.speed / engine.state_object.flying_base_cost;
-	};
-	lookup.get_distance = function(point1,point2){
-		var R = 6371; // km
-		var d = Math.acos(Math.sin(point1.latitude)*Math.sin(point2.latitude) +
-						Math.cos(point1.latitude)*Math.cos(point2.latitude) *
-						Math.cos(point2.longitude-point1.longitude)) * R;
-		return d;
-	};
+	
 	engine.debug = function(message, severity){
 		if(!this.debug_enabled){
 			return;
@@ -76,8 +46,8 @@ function init_engine(debug){
 				if(engine.debug_enabled){force_breakpoint();}
 			}
 		}
-		if(typeof(engine.logging_callback) == "function"){
-			engine.logging_callback(outputstring);
+		if(typeof(engine.callbacks.logging_callback) == "function"){
+			engine.callbacks.logging_callback(outputstring);
 		}
 	};
 	engine.prepare_simulation = function(state_object){
@@ -155,10 +125,48 @@ function init_engine(debug){
 								engine.debug("-- With " + job.type + " " + job.name + " onboard.");
 							});
 						}
-					});
+					}); //each plane
+
+					//is it time to generate jobs?
+					if(engine.state_object.next_job_generate < engine.gameTime){
+						//time to generate new jobs.
+
+							//for each airport from
+							var from_airports = engine.state_object.airports;
+							from_airports.forEach(function(from_airport){
+								//make a list of airports to.
+								var to_airports = engine.state_object.airports;
+								to_airports.forEach(function(to_airport){
+									if(to_airport.id !== from_airport.id){
+										//& generate that many  jobs.
+										from_airport.jobs = from_airport.jobs.concat(engine.generate_jobs(from_airport,to_airport));}
+								});
+							});
+						engine.state_object.next_job_generate = engine.gameTime + engine.state_object.job_generate_wait_time;
+						if(typeof(engine.callbacks.new_jobs_callback) == "function"){engine.callbacks.new_jobs_callback();}
+					}
 				}
 			state.metadata.last_logic_run = now.getTime();
 		}
+	};
+	engine.generate_jobs = function(from_airport,to_airport){
+		var people_jobs_to_generate = from_airport.sizeMillions * to_airport.sizeMillions * 0.1 * getRandomInt(0,3);
+		var cargo_jobs_to_generate = from_airport.sizeMillions * to_airport.sizeMillions * 0.1 * getRandomInt(0,3);
+		var people_first_names = ['Amy','Joanna','Kirstee','Michelle','Simon','Ben','Melanie','George','Ann','Hanna','Craig','Chris','Elizabeth','Suzanne','Georgina','Patricia','Victoria','Zana','Hilary','Dorothy','Judy','Kim','Esther','Gitta','Giha','Lyn','Glenda','Ann','Janette','Joyce','Leah'];
+		var people_last_names = ['Brown','Smith','Jones','Williams','Jackson','White','Black','Gray'];
+		var cargo_names = ['Cups','Bottles','Boxes','Phones','Mice','Keyboards','Monitors','USB Sticks','Wallets','Staplers','Labels','Paper','iPhones','Signs'];
+		var jobs = [];
+		var i;
+		for(i = 0; i < people_jobs_to_generate;i++){
+			var fn = people_first_names[Math.floor(Math.random()*people_first_names.length)];
+			var ln = people_last_names[Math.floor(Math.random()*people_last_names.length)];
+			jobs.push({"type":"people",name:fn + " " + ln,gender:"NA",cash_payment:lookup.get_flight_retail_cost,destination:to_airport.id});
+		}
+		for(i = 0; i < cargo_jobs_to_generate;i++){
+			var cargoname = cargo_names[Math.floor(Math.random()*cargo_names.length)];
+			jobs.push({"type":"cargo",name:cargoname,gender:"NA",cash_payment:lookup.get_flight_retail_cost,destination:to_airport.id});
+		}
+		return jobs;
 	};
 	engine.check_state_object = function(state_object){
 		//TODO: Sanity check state object
@@ -173,8 +181,8 @@ function init_engine(debug){
 		game_state.planes = [];
 		game_state.metadata = {};
 		var a = game_state.airports;
-		a.push({"id":1,"name":"Sydney","activated":false,"jobs":[],position:{latitude:-32.010396,longitude:135.119128}});
-		a.push({"id":2,"name":"Brisbane","activated":false,"jobs":[],position:{latitude:-33.922423,longitude:151.183376}});
+		a.push({"id":1,"name":"Sydney","sizeMillions":5,"activated":false,"jobs":[],position:{latitude:-32.010396,longitude:135.119128}});
+		a.push({"id":2,"name":"Brisbane","sizeMillions":2,"activated":false,"jobs":[],position:{latitude:-33.922423,longitude:151.183376}});
 		var ps = game_state.planes;
 		var p = {"id":1,"model":"Cessna","speed":3,"jobs_onboard":[],"itinerary":[],status:"",next_airport_id:1,"next_airport_object":{},"arrives_at":0,"capacity_people":2,"capacity_cargo":0};
 		p.jobs_onboard.push({"type":"people",name:"Fred",gender:"Male",cash_payment:100,destination:1});
@@ -193,6 +201,8 @@ function init_engine(debug){
 		game_state.bucks = 10;
 		game_state.plane_base_speed = 250;
 		game_state.flying_base_cost = 20;
+		game_state.job_generate_wait_time = 2 * 1000 * 60; //2 mins
+		game_state.next_job_generate = now.getTime();
 		return game_state;
 	};
 	engine.send_aircraft = function(plane_id, airport_id){

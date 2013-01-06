@@ -2,7 +2,7 @@ if(typeof(engine) == "undefined"){
 	alert('game engine not loaded..');
 }
 $(function(){
-	engine.logging_callback = function(data){
+	engine.callbacks.logging_callback = function(data){
 		$(".last_log").html(data + "<br />");
 		$(".log").append(data + "<br />");
 	};
@@ -14,6 +14,7 @@ $(function(){
 		p.forEach(function(plane){
 
 			var html = "<div id='plane_"+plane.id+"' class='plane_summary'>Plane " + plane.id + " <br />Status: "+plane.status+" - " + plane.next_airport_object.name;
+			
 			html +="<div id='passenger_list_" + plane.id + "'>Passenger Manifest<br />";
 
 
@@ -34,6 +35,26 @@ $(function(){
 					}
 				});
 				html +="</div>"; //destinations
+
+				//and jobs to load on the plane.
+				html += "<div id='jobs_available'>Jobs:<br />";
+				var jobs = plane.jobs;
+				var loaded_people = 0;
+				var loaded_cargo = 0;
+				plane.jobs_onboard.forEach(function(job){
+					if(job.type == "people"){
+						loaded_people +=1;
+					}
+					if(job.type == "cargo"){
+						loaded_cargo +=1;
+					}
+				});
+				plane.next_airport_object.jobs.forEach(function(job){
+					if(job.type == "people" && loaded_people < plane.capacity_people){
+						html +="<span class='selectable_job' data-job-id='" + job.id + "' data-plane-id='" + plane.id + "''>" + job.name + " " + job.type + "</span><br />";
+					}
+				});
+				html += "</div>"; //jobs div
 			}
 			html+="</div>"; //plane div
 			$(".planes").append(html);
