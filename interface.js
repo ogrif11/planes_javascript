@@ -2,18 +2,107 @@ if(typeof(engine) == "undefined"){
 	alert('game engine not loaded..');
 }
 $(function(){
-	engine.logging_callback = function(data){
+	engine.callbacks.logging_callback = function(data){
 		$(".last_log").html(data + "<br />");
 		$(".log").append(data + "<br />");
 	};
-	setInterval(function(){
+	engine.callbacks.plane_status_changed = function(p){
+		update_plane_status(p);
+	};
+	function update_plane_status(p){
+		//if the DIV for this plane doesn't exist, add it.
+			var div_exists = $("#plane_window_" + p.id).length !== 0;
+			if(!div_exists){
+				var h = "<div id='plane_window_"+p.id+"' class='plane_summary'>Plane window ID " + p.id + "<br />";
+				h +="<div class='data-wrapper'>Status: <span class='plane_status emphasis'></span><br />";
+				h +="<span class='arrives_in'></span><br />";
+				h +="<span class='destination'></span><br />";
+				h +="<br />Passengers aboard:<br /><div class='passenger_manifest'></div><br />";
+				h +="<br />Jobs available:<br /><div class='job_sheet'></div><br />";
+				h +="<br />Destinations available:<br /><div class='destinations'></div><br />";
+				h += "</div></div>";
+			$(".planes_window").append(h);
+			}
 
+			var pwin = $("#plane_window_" + p.id).children(".data-wrapper");
+
+			//status, arrival time, destination/location
+			pwin.children(".plane_status").text(p.status);
+			if(p.status == "enroute"){
+				pwin.children(".arrives_in").text("Arrives in " + lookup.seconds_until_arrival(p.id));
+				pwin.children(".destination").text("Destination " + p.next_airport_object.name);
+			}else{
+				pwin.children(".arrives_in").text("");
+				pwin.children(".destination").text("At " + p.next_airport_object.name);
+			}
+
+			//passenger manifest
+			pwin.children(".passenger_manifest").text("");
+			if(p.jobs_onboard.length > 0){
+				p.jobs_onboard.forEach(function(job){
+					pwin.children(".passenger_manifest").append("--" + job.type + " " + job.name + " Destination: " + lookup.lookup_airport_by_id(job.destination).name + "<br />");
+				});
+			}else{
+				pwin.children(".passenger_manifest").append("(No passengers aboard)");
+			}
+
+			//jobsheet
+			pwin.children(".job_sheet").text("");
+			var loaded_people = 0;
+			var loaded_cargo = 0;
+			p.jobs_onboard.forEach(function(job){
+				if(job.type == "people"){
+					loaded_people +=1;
+				}
+				if(job.type == "cargo"){
+					loaded_cargo +=1;
+				}
+			});
+			pwin.children(".job_sheet").html("");
+			pwin.children(".destinations").html("");
+			if(p.status == "grounded"){
+				var ap_jobs = engine.get_jobs(p.next_airport_id);
+				
+				ap_jobs.forEach(function(job){
+					var ap = lookup.lookup_airport_by_id(job.destination);
+					if(job.type == "people" && loaded_people < p.capacity_people){
+						pwin.children(".job_sheet").append("<span class='selectable_job' data-job-id='" + job.id + "' data-plane-id='" + p.id + "''>" + job.name + " " + job.type + " " + ap.name + "</span><br />");
+					}
+					if(job.type == "cargo" && loaded_cargo < p.capacity_cargo){
+						pwin.children(".job_sheet").append("<span class='selectable_job' data-job-id='" + job.id + "' data-plane-id='" + p.id + "''>" + job.name + " " + job.type + " " + ap.name + "</span><br />");
+					}
+				});
+
+			//destinations
+			
+				
+				//give the user options where to send the plane.
+				var airports = engine.state_object.airports;
+				airports.forEach(function(airport){
+					if(airport != p.next_airport_object){
+						pwin.children(".destinations").append("<span class='selectable_destination' data-plane-id='" + p.id + "' data-to-airport='" + airport.id + "' data-from-airport='" + p.next_airport_object.id + "'> "+airport.name+"</span><br />");
+					}
+				});
+			}
+
+
+			var money = engine.state_object.money;
+			$(".money_available").text(money);
+	}
+
+
+
+	/*setInterval(function(){
 		//display plane info.
 		$(".planes").html("");
 		var p = engine.state_object.planes;
 		p.forEach(function(plane){
+			
 
 			var html = "<div id='plane_"+plane.id+"' class='plane_summary'>Plane " + plane.id + " <br />Status: "+plane.status+" - " + plane.next_airport_object.name;
+			if(plane.status == "enroute"){
+				html += " arrives in " + lookup.seconds_until_arrival(plane.id);
+			}
 			html +="<div id='passenger_list_" + plane.id + "'>Passenger Manifest<br />";
 
 
@@ -34,6 +123,27 @@ $(function(){
 					}
 				});
 				html +="</div>"; //destinations
+
+				//and jobs to load on the plane.
+				html += "<div id='jobs_available'>Jobs:<br />";
+				var jobs = plane.jobs;
+				var loaded_people = 0;
+				var loaded_cargo = 0;
+				plane.jobs_onboard.forEach(function(job){
+					if(job.type == "people"){
+						loaded_people +=1;
+					}
+					if(job.type == "cargo"){
+						loaded_cargo +=1;
+					}
+				});
+				var ap_jobs = engine.get_jobs(plane.next_airport_id);
+				ap_jobs.forEach(function(job){
+					if(job.type == "people" && loaded_people < plane.capacity_people){
+						html +="<span class='selectable_job' data-job-id='" + job.id + "' data-plane-id='" + plane.id + "''>" + job.name + " " + job.type + "</span><br />";
+					}
+				});
+				html += "</div>"; //jobs div
 			}
 			html+="</div>"; //plane div
 			$(".planes").append(html);
@@ -43,7 +153,7 @@ $(function(){
 		var money = engine.state_object.money;
 		$(".money_available").text(money);
 
-	},500);
+	},500);*/
 
 	//events.
 	$(".selectable_destination").live('click',function(){
@@ -59,4 +169,13 @@ $(function(){
 		engine.debug(from_airport.name + " to " + to_airport.name + " is " + flight_distance + " will take " + flight_time + " and will cost " + flight_cost);
 		engine.send_aircraft(plane_id,to_airport_id);
 	});
+	$(".selectable_job").live('click',function(){
+		var job_id = $(this).attr('data-job-id');
+		var plane_id = $(this).attr('data-plane-id');
+		engine.assign_job_to_plane(plane_id, job_id);
+	});
+
+
+	//final setup
+	engine.force_ui_update();
 });

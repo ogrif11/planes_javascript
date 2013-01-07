@@ -1,5 +1,5 @@
 var engine;
-var lookup;
+
 var output_debug_messages = true;
 if(typeof(engine) == "undefined"){
 	if(init_engine(output_debug_messages)){
@@ -14,48 +14,18 @@ if(typeof(engine) == "undefined"){
 }
 function init_engine(debug){
 	engine = {};
-	lookup = {};
 	engine.debug_enabled = false;
 	engine.initialised = true;
 	engine.gameTime = 0;
-	engine.logging_callback = false; //allocate a function to call it on log.
+	engine.callbacks = {};
+	engine.callbacks.logging_callback = false; //allocate a function to call it on log.
+	engine.callbacks.new_jobs_callback = false;
+	engine.callbacks.plane_status_changed = false;
 	if(debug){
 		engine.debug_enabled = true;
 		console.log("Debugger enabled.");
 	}
-	lookup.lookup_airport_by_id = function(id){
-		var ap=false;
-		engine.state_object.airports.forEach(function(a){
-			if(a.id == id){
-				ap=a;
-				return;
-			}
-		});
-		return ap;
-	};
-	lookup.lookup_plane_by_id = function(id){
-		var plane = false;
-		engine.state_object.planes.forEach(function(p){
-			if(p.id == id){
-				plane = p;
-				return;
-			}
-		});
-		return plane;
-	};
-	lookup.get_flight_time = function(flight_distance, plane){
-		return flight_distance / plane.speed / engine.state_object.plane_base_speed;
-	};
-	lookup.get_flight_cost = function(flight_distance, plane){
-		return flight_distance / plane.speed / engine.state_object.flying_base_cost;
-	};
-	lookup.get_distance = function(point1,point2){
-		var R = 6371; // km
-		var d = Math.acos(Math.sin(point1.latitude)*Math.sin(point2.latitude) +
-						Math.cos(point1.latitude)*Math.cos(point2.latitude) *
-						Math.cos(point2.longitude-point1.longitude)) * R;
-		return d;
-	};
+	
 	engine.debug = function(message, severity){
 		if(!this.debug_enabled){
 			return;
@@ -76,8 +46,8 @@ function init_engine(debug){
 				if(engine.debug_enabled){force_breakpoint();}
 			}
 		}
-		if(typeof(engine.logging_callback) == "function"){
-			engine.logging_callback(outputstring);
+		if(typeof(engine.callbacks.logging_callback) == "function"){
+			engine.callbacks.logging_callback(outputstring);
 		}
 	};
 	engine.prepare_simulation = function(state_object){
@@ -97,6 +67,7 @@ function init_engine(debug){
 		}else{
 			engine.debug("Could not work out game state object - expected object to resume or array of options",2);
 		}
+
 		return true;
 	};
 	engine.run_simulation = function(){
@@ -111,7 +82,7 @@ function init_engine(debug){
 			//TODO: Is it ok for simulation to continue if game is paused?
 
 			var currentDate = now.getSeconds();
-			engine.debug("tick: Has been " + (logic_run_wait_time/10) + "/100s since last run.. " + currentDate);
+			//engine.debug("tick: Has been " + (logic_run_wait_time/10) + "/100s since last run.. " + currentDate);
 			
 				{
 				//TODO: Refactor away.
@@ -122,6 +93,7 @@ function init_engine(debug){
 					p.forEach(function(plane){
 								var ap = lookup.lookup_airport_by_id(plane.next_airport_id);
 								plane.next_airport_object = ap;
+						var prev_status = plane.status;
 						if(plane.arrives_at < engine.gameTime){
 							if(plane.arrives_at > 0){
 								engine.debug("Plane " + plane.id + " is landing at " + ap.name + " (arrival time " + plane.arrives_at + ")");
@@ -141,24 +113,76 @@ function init_engine(debug){
 									}
 								}
 								plane.status = "landing";
+								if(typeof(engine.callbacks.plane_status_changed) == "function" && plane.status != prev_status){
+									engine.callbacks.plane_status_changed(plane);
+								}
 							}else{
-								engine.debug("Plane " + plane.id + " is grounded at " + ap.name);
 								plane.status = "grounded";
+								if(typeof(engine.callbacks.plane_status_changed) == "function" && plane.status != prev_status){
+									engine.callbacks.plane_status_changed(plane);
+								}
 							}
 						}else{
-								engine.debug("Plane " + plane.id + " is enroute to " + ap.name + " (arrival time " + plane.arrives_at + ")");
-						
 								plane.status = "enroute";
+								if(typeof(engine.callbacks.plane_status_changed) == "function"){
+									engine.callbacks.plane_status_changed(plane);
+								}
 						}
 						if(plane.jobs_onboard.length > 0){
 							plane.jobs_onboard.forEach(function(job){
-								engine.debug("-- With " + job.type + " " + job.name + " onboard.");
+								//engine.debug("-- With " + job.type + " " + job.name + " onboard.");
 							});
 						}
-					});
+					}); //each plane
+
+					//is it time to generate jobs?
+					if(engine.state_object.next_job_generate < engine.gameTime){
+						//time to generate new jobs.
+							
+						engine.generate_jobs();
+						engine.state_object.next_job_generate = engine.gameTime + engine.state_object.job_generate_wait_time;
+						if(typeof(engine.callbacks.new_jobs_callback) == "function"){engine.callbacks.new_jobs_callback();}
+					}
 				}
 			state.metadata.last_logic_run = now.getTime();
 		}
+	};
+	engine.generate_jobs = function(){
+		var people_first_names = ['Amy','Joanna','Kirstee','Michelle','Simon','Ben','Melanie','George','Ann','Hanna','Craig','Chris','Elizabeth','Suzanne','Georgina','Patricia','Victoria','Zana','Hilary','Dorothy','Judy','Kim','Esther','Gitta','Giha','Lyn','Glenda','Ann','Janette','Joyce','Leah'];
+		var people_last_names = ['Brown','Smith','Jones','Williams','Jackson','White','Black','Gray'];
+		var cargo_names = ['Cups','Bottles','Boxes','Phones','Mice','Keyboards','Monitors','USB Sticks','Wallets','Staplers','Labels','Paper','iPhones','Signs'];
+		var jobs = [];
+		var i;
+		var job;
+		//for each airport from
+							var from_airports = engine.state_object.airports;
+							from_airports.forEach(function(from_airport){
+								//make a list of airports to.
+								var to_airports = engine.state_object.airports;
+								to_airports.forEach(function(to_airport){
+
+									if(to_airport.id !== from_airport.id){
+										var people_jobs_to_generate = from_airport.sizeMillions * to_airport.sizeMillions * 0.07 * getRandomInt(0,3);
+										var cargo_jobs_to_generate = from_airport.sizeMillions * to_airport.sizeMillions * 0.07 * getRandomInt(0,3);
+										var flight_distance = lookup.get_distance(from_airport.position, to_airport.position);
+											
+										for(i = 0; i < people_jobs_to_generate;i++){
+											var fn = people_first_names[Math.floor(Math.random()*people_first_names.length)];
+											var ln = people_last_names[Math.floor(Math.random()*people_last_names.length)];
+											engine.state_object.metadata.jobs_created +=1;
+											job = {"taken":false,"start_airport":from_airport.id, "id":engine.state_object.metadata.jobs_created,"type":"people",name:fn + " " + ln,gender:"NA",cash_payment:lookup.lookup_flight_retail_cost(flight_distance),destination:to_airport.id};
+											engine.state_object.jobs.push(job);
+										}
+										for(i = 0; i < cargo_jobs_to_generate;i++){
+											var cargoname = cargo_names[Math.floor(Math.random()*cargo_names.length)];
+											engine.state_object.metadata.jobs_created +=1;
+											job = {"taken":false,"start_airport":from_airport.id, "id":engine.state_object.metadata.jobs_created,"type":"cargo",name:cargoname,gender:"NA",cash_payment:lookup.lookup_flight_retail_cost(flight_distance),destination:to_airport.id};
+											engine.state_object.jobs.push(job);
+										}
+									}
+								}); //to
+							}); //from
+			engine.force_ui_update();
 	};
 	engine.check_state_object = function(state_object){
 		//TODO: Sanity check state object
@@ -173,15 +197,16 @@ function init_engine(debug){
 		game_state.planes = [];
 		game_state.metadata = {};
 		var a = game_state.airports;
-		a.push({"id":1,"name":"Sydney","activated":false,"jobs":[],position:{latitude:-32.010396,longitude:135.119128}});
-		a.push({"id":2,"name":"Brisbane","activated":false,"jobs":[],position:{latitude:-33.922423,longitude:151.183376}});
+		a.push({"id":1,"name":"Sydney","sizeMillions":5,"activated":false,"jobs":[],position:{latitude:-32.010396,longitude:135.119128}});
+		a.push({"id":2,"name":"Brisbane","sizeMillions":2,"activated":false,"jobs":[],position:{latitude:-33.922423,longitude:151.183376}});
+		a.push({"id":3,"name":"Adelaide","sizeMillions":2,"activated":false,"jobs":[],position:{latitude:-34.948498,longitude:138.530817}});
 		var ps = game_state.planes;
 		var p = {"id":1,"model":"Cessna","speed":3,"jobs_onboard":[],"itinerary":[],status:"",next_airport_id:1,"next_airport_object":{},"arrives_at":0,"capacity_people":2,"capacity_cargo":0};
-		p.jobs_onboard.push({"type":"people",name:"Fred",gender:"Male",cash_payment:100,destination:1});
-		p.jobs_onboard.push({"type":"people",name:"Wilma",gender:"Female",cash_payment:100,destination:2});
+		//p.jobs_onboard.push({"type":"people",name:"Fred",gender:"Male",cash_payment:100,destination:1});
+		//p.jobs_onboard.push({"type":"people",name:"Wilma",gender:"Female",cash_payment:100,destination:2});
 		ps.push(p);
 		var now = new Date();
-		var q = {"id":2,"model":"Cessna","speed":3,"jobs_onboard":[],"itinerary":[],status:"",next_airport_id:1,"next_airport_object":{},"arrives_at":now.getTime() + 3000,"capacity_people":2,"capacity_cargo":0};
+		var q = {"id":2,"model":"Cessna","speed":3,"jobs_onboard":[],"itinerary":[],status:"",next_airport_id:2,"next_airport_object":{},"arrives_at":now.getTime() + 3000,"capacity_people":2,"capacity_cargo":0};
 		q.jobs_onboard.push({"type":"people",name:"Homer",gender:"Male",cash_payment:100,destination:1});
 		q.jobs_onboard.push({"type":"people",name:"Marge",gender:"Female",cash_payment:100,destination:2});
 		ps.push(q);
@@ -189,11 +214,22 @@ function init_engine(debug){
 		m.world_start_time = Date.now();
 		m.simulation_start_time = Date.now();
 		m.last_logic_run = 0; //set to trigger first up.
+		m.jobs_created = 0;
+		game_state.jobs = [];
 		game_state.money = 10000;
 		game_state.bucks = 10;
-		game_state.plane_base_speed = 250;
-		game_state.flying_base_cost = 20;
+		game_state.plane_base_speed = 300;
+		game_state.flying_base_cost = 0.1;
+		game_state.job_generate_wait_time = 3 * 1000 * 60; //2 mins
+		game_state.next_job_generate = now.getTime();
 		return game_state;
+	};
+	engine.force_ui_update = function(){
+		engine.state_object.planes.forEach(function(plane){
+			if(typeof(engine.callbacks.plane_status_changed) == "function"){
+				engine.callbacks.plane_status_changed(plane);
+			}
+		});
 	};
 	engine.send_aircraft = function(plane_id, airport_id){
 		var plane = lookup.lookup_plane_by_id(plane_id);
@@ -202,7 +238,36 @@ function init_engine(debug){
 		engine.state_object.money -= lookup.get_flight_cost(flight_distance, plane);
 		plane.next_airport_id = airport_id;
 		plane.next_airport_object = airport;
+		engine.debug("Deducting " + lookup.get_flight_cost(flight_distance, plane) + " for cost of flight to " + airport.name);
 		plane.arrives_at = engine.gameTime + (1000 * 60 * lookup.get_flight_time(flight_distance, plane));
+		if(typeof(engine.callbacks.plane_status_changed) == "function"){
+			engine.callbacks.plane_status_changed(plane);
+		}
+	};
+	engine.assign_job_to_plane = function(plane_id,job_id){
+		var job = lookup.lookup_job_by_id(job_id);
+		var plane = lookup.lookup_plane_by_id(plane_id);
+		plane.jobs_onboard.push(job);
+		engine.hide_job(job_id);
+		if(typeof(engine.callbacks.plane_status_changed) == "function"){
+			engine.callbacks.plane_status_changed(plane);
+		}
+
+		engine.force_ui_update();
+	};
+	engine.get_jobs = function(airport_id){
+		var jobs = engine.state_object.jobs;
+		var jobs_out = [];
+		jobs.forEach(function(job){
+			if(job.start_airport == airport_id && job.taken === false){
+				jobs_out.push(job);
+			}
+		});
+		return jobs_out;
+	};
+	engine.hide_job = function(job_id){
+		var job = lookup.lookup_job_by_id(job_id);
+		job.taken = true;
 	};
 	return true;
 }
