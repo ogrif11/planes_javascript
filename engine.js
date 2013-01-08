@@ -74,7 +74,7 @@ function init_engine(debug){
 		t=setInterval(function(){engine.tick();},30);
 	};
 	engine.tick = function(){
-		var logic_run_wait_time = 2000; //ms
+		var logic_run_wait_time = 1000; //ms
 		var state = engine.state_object;
 			var now = new Date();
 		engine.gameTime = now.getTime();
@@ -113,17 +113,20 @@ function init_engine(debug){
 									}
 								}
 								plane.status = "landing";
+								plane.position = plane.next_airport_object.position;
 								if(typeof(engine.callbacks.plane_status_changed) == "function" && plane.status != prev_status){
 									engine.callbacks.plane_status_changed(plane);
 								}
 							}else{
 								plane.status = "grounded";
+								plane.position = plane.next_airport_object.position;
 								if(typeof(engine.callbacks.plane_status_changed) == "function" && plane.status != prev_status){
 									engine.callbacks.plane_status_changed(plane);
 								}
 							}
 						}else{
 								plane.status = "enroute";
+								plane.position = lookup.lookup_estimate_plane_position(plane);
 								if(typeof(engine.callbacks.plane_status_changed) == "function"){
 									engine.callbacks.plane_status_changed(plane);
 								}
@@ -197,19 +200,19 @@ function init_engine(debug){
 		game_state.planes = [];
 		game_state.metadata = {};
 		var a = game_state.airports;
-		a.push({"id":1,"name":"Sydney","sizeMillions":5,"activated":false,"jobs":[],position:{latitude:-32.010396,longitude:135.119128}});
-		a.push({"id":2,"name":"Brisbane","sizeMillions":2,"activated":false,"jobs":[],position:{latitude:-33.922423,longitude:151.183376}});
+		a.push({"id":1,"name":"Sydney","sizeMillions":5,"activated":false,"jobs":[],position:{latitude:-33.946884,longitude:151.181359}});
+		a.push({"id":2,"name":"Brisbane","sizeMillions":2,"activated":false,"jobs":[],position:{latitude:-27.392498,longitude:153.116455}});
 		a.push({"id":3,"name":"Adelaide","sizeMillions":2,"activated":false,"jobs":[],position:{latitude:-34.948498,longitude:138.530817}});
 		var ps = game_state.planes;
-		var p = {"id":1,"model":"Cessna","speed":3,"jobs_onboard":[],"itinerary":[],status:"",next_airport_id:1,"next_airport_object":{},"arrives_at":0,"capacity_people":2,"capacity_cargo":0};
-		//p.jobs_onboard.push({"type":"people",name:"Fred",gender:"Male",cash_payment:100,destination:1});
-		//p.jobs_onboard.push({"type":"people",name:"Wilma",gender:"Female",cash_payment:100,destination:2});
+		var p = {"id":1,"model":"Cessna","speed":3,"jobs_onboard":[],"itinerary":[],status:"",next_airport_id:1,takeoff_time:0,position:{},"last_airport_object":{},"next_airport_object":a[0],"arrives_at":0,"capacity_people":2,"capacity_cargo":0};
 		ps.push(p);
 		var now = new Date();
-		var q = {"id":2,"model":"Cessna","speed":3,"jobs_onboard":[],"itinerary":[],status:"",next_airport_id:2,"next_airport_object":{},"arrives_at":now.getTime() + 3000,"capacity_people":2,"capacity_cargo":0};
-		q.jobs_onboard.push({"type":"people",name:"Homer",gender:"Male",cash_payment:100,destination:1});
-		q.jobs_onboard.push({"type":"people",name:"Marge",gender:"Female",cash_payment:100,destination:2});
+		var q = {"id":2,"model":"Cessna","speed":3,"jobs_onboard":[],"itinerary":[],status:"",next_airport_id:2,takeoff_time:0,position:{},"last_airport_object":{},"next_airport_object":a[1],"arrives_at":0,"capacity_people":2,"capacity_cargo":0};
 		ps.push(q);
+		var r = {"id":3,"model":"Cessna","speed":3,"jobs_onboard":[],"itinerary":[],status:"",next_airport_id:2,takeoff_time:0,position:{},"last_airport_object":{},"next_airport_object":a[1],"arrives_at":0,"capacity_people":1,"capacity_cargo":1};
+		ps.push(r);
+		var s = {"id":4,"model":"Cessna","speed":3,"jobs_onboard":[],"itinerary":[],status:"",next_airport_id:2,takeoff_time:0,position:{},"last_airport_object":{},"next_airport_object":a[1],"arrives_at":0,"capacity_people":2,"capacity_cargo":2};
+		ps.push(s);
 		var m = game_state.metadata;
 		m.world_start_time = Date.now();
 		m.simulation_start_time = Date.now();
@@ -218,8 +221,8 @@ function init_engine(debug){
 		game_state.jobs = [];
 		game_state.money = 10000;
 		game_state.bucks = 10;
-		game_state.plane_base_speed = 300;
-		game_state.flying_base_cost = 0.1;
+		game_state.plane_base_speed =1 ;//1;
+		game_state.flying_base_cost = 0.05;
 		game_state.job_generate_wait_time = 3 * 1000 * 60; //2 mins
 		game_state.next_job_generate = now.getTime();
 		return game_state;
@@ -236,8 +239,10 @@ function init_engine(debug){
 		var airport = lookup.lookup_airport_by_id(airport_id);
 		var flight_distance = lookup.get_distance(plane.next_airport_object.position, airport.position);
 		engine.state_object.money -= lookup.get_flight_cost(flight_distance, plane);
+		plane.last_airport_object = plane.next_airport_object;
 		plane.next_airport_id = airport_id;
 		plane.next_airport_object = airport;
+		plane.takeoff_time = engine.gameTime;
 		engine.debug("Deducting " + lookup.get_flight_cost(flight_distance, plane) + " for cost of flight to " + airport.name);
 		plane.arrives_at = engine.gameTime + (1000 * 60 * lookup.get_flight_time(flight_distance, plane));
 		if(typeof(engine.callbacks.plane_status_changed) == "function"){

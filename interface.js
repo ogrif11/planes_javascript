@@ -2,8 +2,18 @@ if(typeof(engine) == "undefined"){
 	alert('game engine not loaded..');
 }
 $(function(){
+	var planeMarkers = [];
+        var mapOptions = {
+          center: new google.maps.LatLng(-34.397, 150.644),
+          zoom: 8,
+          mapTypeId: google.maps.MapTypeId.ROADMAP
+        };
+        map = new google.maps.Map(document.getElementById("map_canvas"),
+            mapOptions);
+
+
+
 	engine.callbacks.logging_callback = function(data){
-		$(".last_log").html(data + "<br />");
 		$(".log").append(data + "<br />");
 	};
 	engine.callbacks.plane_status_changed = function(p){
@@ -22,30 +32,61 @@ $(function(){
 				h +="<br />Destinations available:<br /><div class='destinations'></div><br />";
 				h += "</div></div>";
 			$(".planes_window").append(h);
+
+			//if the div doesn't exist, there's probably no map marker either. add it.
+			var planeMarker = new google.maps.Marker();
+			planeMarker.setMap(map);
+			planeMarkers.push({plane_id:p.id,plane_marker:planeMarker});
+
+			//add a summary list item too.
+			var li = "<li id='plane_summary_" + p.id + "'></li>";
+			$(".plane_list").append(li);
 			}
+			var thisMarker;
+			planeMarkers.forEach(function(marker){
+				if(marker.plane_id == p.id){
+					thisMarker = marker;
+				}
+			});
+			var latlng = new google.maps.LatLng(p.position.latitude,p.position.longitude);
+			thisMarker.plane_marker.setPosition(latlng);
 
 			var pwin = $("#plane_window_" + p.id).children(".data-wrapper");
-
+			var psum = $("#plane_summary_" + p.id);
 			//status, arrival time, destination/location
 			pwin.children(".plane_status").text(p.status);
+			psum.html("");
+			var sum_text = "";
+			sum_text += p.id + " " + p.status;
+			sum_text +=": " + p.next_airport_object.name;
 			if(p.status == "enroute"){
 				pwin.children(".arrives_in").text("Arrives in " + lookup.seconds_until_arrival(p.id));
 				pwin.children(".destination").text("Destination " + p.next_airport_object.name);
+				sum_text +=" in " + lookup.seconds_until_arrival(p.id);
+
 			}else{
 				pwin.children(".arrives_in").text("");
 				pwin.children(".destination").text("At " + p.next_airport_object.name);
 			}
 
 			//passenger manifest
+			var passenger_count=0;
+			var cargo_count=0;
 			pwin.children(".passenger_manifest").text("");
 			if(p.jobs_onboard.length > 0){
 				p.jobs_onboard.forEach(function(job){
+					if(job.type == "people"){
+						passenger_count+=1;
+					}else{
+						cargo_count+=1;
+					}
 					pwin.children(".passenger_manifest").append("--" + job.type + " " + job.name + " Destination: " + lookup.lookup_airport_by_id(job.destination).name + "<br />");
 				});
 			}else{
 				pwin.children(".passenger_manifest").append("(No passengers aboard)");
 			}
-
+			sum_text += " " + passenger_count + "P " + cargo_count + "C";
+			psum.text(sum_text);
 			//jobsheet
 			pwin.children(".job_sheet").text("");
 			var loaded_people = 0;
