@@ -21,6 +21,8 @@ function init_engine(debug){
 	engine.callbacks.logging_callback = false; //allocate a function to call it on log.
 	engine.callbacks.new_jobs_callback = false;
 	engine.callbacks.plane_status_changed = false;
+	engine.callbacks.cash_changed_hands = false;
+	engine.callbacks.no_money = false;
 	if(debug){
 		engine.debug_enabled = true;
 		console.log("Debugger enabled.");
@@ -55,6 +57,7 @@ function init_engine(debug){
 			//make a 'new game' state.
 				var new_game_args = state_object;
 				engine.state_object = engine.get_new_state_object(new_game_args);
+				engine.transaction(1000,"Start Money");
 				engine.debug("Loaded a new game state.");
 		}
 		else if(typeof(state_object) == "object"){
@@ -67,7 +70,7 @@ function init_engine(debug){
 		}else{
 			engine.debug("Could not work out game state object - expected object to resume or array of options",2);
 		}
-
+		
 		return true;
 	};
 	engine.run_simulation = function(){
@@ -106,8 +109,7 @@ function init_engine(debug){
 									for(var i=plane.jobs_onboard.length-1; i >=0;i--){
 										var job = plane.jobs_onboard[i];
 										if(job.destination == ap.id){
-											engine.debug("unloading " + job.type + " " + job.name + " for " + job.cash_payment);
-											engine.state_object.money +=job.cash_payment;
+											engine.transaction(job.cash_payment,"unloading " + job.type + " " + job.name);
 											plane.jobs_onboard.splice(i,1);
 										}
 									}
@@ -219,7 +221,7 @@ function init_engine(debug){
 		m.last_logic_run = 0; //set to trigger first up.
 		m.jobs_created = 0;
 		game_state.jobs = [];
-		game_state.money = 10000;
+		game_state.money = 0;
 		game_state.bucks = 10;
 		game_state.plane_base_speed =1 ;//1;
 		game_state.flying_base_cost = 0.05;
@@ -238,7 +240,9 @@ function init_engine(debug){
 		var plane = lookup.lookup_plane_by_id(plane_id);
 		var airport = lookup.lookup_airport_by_id(airport_id);
 		var flight_distance = lookup.get_distance(plane.next_airport_object.position, airport.position);
-		engine.state_object.money -= lookup.get_flight_cost(flight_distance, plane);
+		if(!engine.transaction(lookup.get_flight_cost(flight_distance, plane)*-1,"Cost of flight to " + airport.name + " from " + plane.next_airport_object.name)){
+			return false;
+		}
 		plane.last_airport_object = plane.next_airport_object;
 		plane.next_airport_id = airport_id;
 		plane.next_airport_object = airport;
@@ -259,6 +263,20 @@ function init_engine(debug){
 		}
 
 		engine.force_ui_update();
+	};
+	engine.transaction = function(amount,reason){
+		if(engine.state_object.money + amount < 0){
+			//No money!
+			if(typeof(engine.callbacks.no_money) == "function"){
+				engine.callbacks.no_money(amount,reason);
+			}
+			return false;
+		}
+		engine.state_object.money += amount;
+		if(typeof(engine.callbacks.cash_changed_hands) == "function"){
+			engine.callbacks.cash_changed_hands(amount,reason);
+		}
+		return true;
 	};
 	engine.get_jobs = function(airport_id){
 		var jobs = engine.state_object.jobs;

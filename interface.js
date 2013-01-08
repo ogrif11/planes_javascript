@@ -19,6 +19,15 @@ $(function(){
 	engine.callbacks.plane_status_changed = function(p){
 		update_plane_status(p);
 	};
+	engine.callbacks.cash_changed_hands = function(amount,reason){
+		$(".cash_changed_hands").show();
+		$(".cash_changed_hands").text("$"+amount);
+		$(".cash_changed_hands").fadeOut(1500);
+	};
+	engine.callbacks.no_money = function(amount,reason){
+		alert('you ran out of money - wait for money or start again. Amount needed to continue: ' + amount);
+	};
+
 	function update_plane_status(p){
 		//if the DIV for this plane doesn't exist, add it.
 			var div_exists = $("#plane_window_" + p.id).length !== 0;
@@ -31,16 +40,19 @@ $(function(){
 				h +="<br />Jobs available:<br /><div class='job_sheet'></div><br />";
 				h +="<br />Destinations available:<br /><div class='destinations'></div><br />";
 				h += "</div></div>";
-			$(".planes_window").append(h);
+				$(".planes_window").append(h);
 
-			//if the div doesn't exist, there's probably no map marker either. add it.
-			var planeMarker = new google.maps.Marker();
-			planeMarker.setMap(map);
-			planeMarkers.push({plane_id:p.id,plane_marker:planeMarker});
+				//if the div doesn't exist, there's probably no map marker either. add it.
+				var planeMarker = new google.maps.Marker();
+				planeMarker.setMap(map);
+				planeMarkers.push({plane_id:p.id,plane_marker:planeMarker});
 
-			//add a summary list item too.
-			var li = "<li id='plane_summary_" + p.id + "'></li>";
-			$(".plane_list").append(li);
+				//add a summary list item too.
+				var li = "<li id='plane_summary_" + p.id + "' class='plane_summary_item' data-plane-id='" + p.id + "'></li>";
+				$(".plane_list").append(li);
+
+				//hide all cards again.
+				$(".plane_summary").hide();
 			}
 			var thisMarker;
 			planeMarkers.forEach(function(marker){
@@ -216,7 +228,39 @@ $(function(){
 		engine.assign_job_to_plane(plane_id, job_id);
 	});
 
+	
+	$(".plane_summary_item").live('click',function(){
+		//show relevant plane detail card.
+			var id = $(this).attr('data-plane-id');
+			$(".plane_summary").hide();
+		
+		$("#plane_window_"+id).show();
+		//change colour of marker.
+	});
+
 
 	//final setup
 	engine.force_ui_update();
+
+//set up map bounds to airports.
+			var lowest_lat = 0;
+			var highest_lat = 0;
+			var lowest_long = 0;
+			var highest_long = 0;
+			engine.state_object.airports.forEach(function(airport){
+				if(airport.position.latitude < lowest_lat || lowest_lat === 0){
+					lowest_lat = airport.position.latitude;
+				}
+				if(airport.position.longitude < lowest_long || lowest_long === 0){
+					lowest_long = airport.position.longitude;
+				}
+				if(airport.position.latitude > highest_lat || highest_lat === 0){
+					highest_lat = airport.position.latitude;
+				}
+				if(airport.position.longitude >    highest_long || highest_long === 0){
+					highest_long = airport.position.longitude;
+				}
+			});
+			var latlngbounds = new google.maps.LatLngBounds(new google.maps.LatLng(lowest_lat, lowest_long),new google.maps.LatLng(highest_lat, highest_long));
+			map.fitBounds(latlngbounds);
 });
