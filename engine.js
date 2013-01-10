@@ -202,9 +202,9 @@ function init_engine(debug){
 		game_state.planes = [];
 		game_state.metadata = {};
 		var a = game_state.airports;
-		a.push({"id":1,"name":"Sydney","sizeMillions":5,"activated":false,"jobs":[],position:{latitude:-33.946884,longitude:151.181359}});
-		a.push({"id":2,"name":"Brisbane","sizeMillions":2,"activated":false,"jobs":[],position:{latitude:-27.392498,longitude:153.116455}});
-		a.push({"id":3,"name":"Adelaide","sizeMillions":2,"activated":false,"jobs":[],position:{latitude:-34.948498,longitude:138.530817}});
+		a.push({"id":1,"name":"Sydney","sizeMillions":5,"activated":true,"jobs":[],position:{latitude:-33.946884,longitude:151.181359}});
+		a.push({"id":2,"name":"Brisbane","sizeMillions":2,"activated":true,"jobs":[],position:{latitude:-27.392498,longitude:153.116455}});
+		a.push({"id":3,"name":"Adelaide","sizeMillions":2,"activated":true,"jobs":[],position:{latitude:-34.948498,longitude:138.530817}});
 		var ps = game_state.planes;
 		var p = {"id":1,"model":"Cessna","speed":3,"jobs_onboard":[],"itinerary":[],status:"",next_airport_id:1,takeoff_time:0,position:{},"last_airport_object":{},"next_airport_object":a[0],"arrives_at":0,"capacity_people":2,"capacity_cargo":0};
 		ps.push(p);
@@ -233,6 +233,11 @@ function init_engine(debug){
 		engine.state_object.planes.forEach(function(plane){
 			if(typeof(engine.callbacks.plane_status_changed) == "function"){
 				engine.callbacks.plane_status_changed(plane);
+			}
+		});
+		engine.state_object.airports.forEach(function(airport){
+			if(typeof(engine.callbacks.airport_status_changed) == "function"){
+				engine.callbacks.airport_status_changed(airport);
 			}
 		});
 	};

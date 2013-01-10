@@ -9,6 +9,17 @@ lookup.lookup_airport_by_id = function(id){
 		});
 		return ap;
 	};
+	lookup.get_angle_to_rotate = function(rise, run){
+		engine.debug(rise + "/" + run);
+		var angle = (Math.atan(rise/run) *(180/ Math.PI));
+		if(rise > 0){
+			return (angle -90) * -1;
+		}else{
+			return (angle -270) * -1;
+		}
+		//return () - 90) * (rise < 0? 1 : -1);
+	};
+
 	lookup.lookup_plane_by_id = function(id){
 		var plane = false;
 		engine.state_object.planes.forEach(function(p){

@@ -8,7 +8,6 @@
 	<script src="jQueryRotateCompressed.2.2.js"></script>
 	<script src="helpers.js"></script>
 	<script src="lookup.js"></script>
-
  <script type="text/javascript"
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkQdgexG_Ve4w4LMbG10xb85pWDnruimo&sensor=false">
     </script>
@@ -39,10 +38,23 @@
 		clear:both;
 	}
 	.markerLabel {
-		background: #fff;
 		font-size: 8px;
-		padding: 0px 5px;
-		border: 1px solid #333;
+		position:relative;
+		top:-16px;
+		left:-16px;
+		z-index: 1000;
+	}
+	.airportLabel {
+		position:relative;
+		top:-36px;
+		left:-16px;
+		z-index: 999;
+
+	}
+	.plane_marker_image {
+	}
+	.airport_marker_image {
+
 	}
 	#map_canvas { height: 100% }
 	</style>

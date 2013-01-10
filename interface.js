@@ -3,6 +3,7 @@ if(typeof(engine) == "undefined"){
 }
 $(function(){
 	var planeMarkers = [];
+	var airportMarkers = [];
         var mapOptions = {
           center: new google.maps.LatLng(-34.397, 150.644),
           zoom: 8,
@@ -11,13 +12,21 @@ $(function(){
         map = new google.maps.Map(document.getElementById("map_canvas"),
             mapOptions);
 
+	google.maps.event.addListener(map, 'center_changed', function() {
+		engine.force_ui_update();
+	});
 
-
+	google.maps.event.addListener(map, 'zoom_changed', function() {
+		engine.force_ui_update();
+	});
 	engine.callbacks.logging_callback = function(data){
 		$(".log").append(data + "<br />");
 	};
 	engine.callbacks.plane_status_changed = function(p){
 		update_plane_status(p);
+	};
+	engine.callbacks.airport_status_changed = function(a){
+		update_airport_status(a);
 	};
 	engine.callbacks.cash_changed_hands = function(amount,reason){
 		$(".cash_changed_hands").show();
@@ -27,7 +36,31 @@ $(function(){
 	engine.callbacks.no_money = function(amount,reason){
 		alert('you ran out of money - wait for money or start again. Amount needed to continue: ' + amount);
 	};
+	function update_airport_status(a){
+		//find marker and remove.
+		for(var i=airportMarkers.length-1;i>=0;i--){
+			if(airportMarkers[i].id === a.id){
+				airportMarkers[i].airport_marker.setMap(null);
+				airportMarkers.splice(i,1);
+			}
+		}
 
+		if(a.activated ===true){
+			//remake marker.
+			var latlng = new google.maps.LatLng(a.position.latitude,a.position.longitude);
+			
+			var airportMarker = new MarkerWithLabel({
+					map: map,
+					labelText: "<img src='http://google-maps-icons.googlecode.com/files/airport.png' class='airport_marker_image' id='airport_marker_" + a.id + "' />" + a.id,
+					labelClass: 'airportLabel',
+					labelVisible: true,
+					icon: "http://maps.google.com/mapfiles/ms/icons/z.png"
+				});
+			airportMarker.setPosition(latlng);
+			airportMarkers.push({id:a.id,airport_marker:airportMarker});
+		}
+
+	}
 	function update_plane_status(p){
 		//if the DIV for this plane doesn't exist, add it.
 			var div_exists = $("#plane_window_" + p.id).length !== 0;
@@ -47,7 +80,7 @@ $(function(){
 				planeMarker.setMap(map);*/
 				var planeMarker = new MarkerWithLabel({
 					map: map,
-					labelText: p.id +"<img src='http://maps.google.com/mapfiles/ms/icons/plane.png' id='plane_marker_" + p.id + "' />",
+					labelText: "<img class='plane_marker_image' src='http://maps.google.com/mapfiles/ms/icons/plane.png' id='plane_marker_" + p.id + "' />" + p.id,
 					labelClass: 'markerLabel',
 					labelVisible: true,
 					icon: "http://maps.google.com/mapfiles/ms/icons/z.png"
@@ -67,7 +100,8 @@ $(function(){
 					thisMarker = marker;
 				}
 			});
-			$("#plane_marker_" + p.id).rotate(30);
+
+
 			var latlng = new google.maps.LatLng(p.position.latitude,p.position.longitude);
 			thisMarker.plane_marker.setPosition(latlng);
 
@@ -83,10 +117,15 @@ $(function(){
 				pwin.children(".arrives_in").text("Arrives in " + lookup.seconds_until_arrival(p.id));
 				pwin.children(".destination").text("Destination " + p.next_airport_object.name);
 				sum_text +=" in " + lookup.seconds_until_arrival(p.id);
-
+				var rise = p.next_airport_object.position.latitude - p.last_airport_object.position.latitude;
+							var run =p.next_airport_object.position.longitude- p.last_airport_object.position.longitude;
+							var rotation_angle = lookup.get_angle_to_rotate(rise,run);
+							$("#plane_marker_" + p.id).rotate(rotation_angle);
+							engine.debug("Plane " + p.id + " rotating " + rotation_angle);
 			}else{
 				pwin.children(".arrives_in").text("");
 				pwin.children(".destination").text("At " + p.next_airport_object.name);
+
 			}
 
 			//passenger manifest
@@ -126,10 +165,10 @@ $(function(){
 				
 				ap_jobs.forEach(function(job){
 					var ap = lookup.lookup_airport_by_id(job.destination);
-					if(job.type == "people" && loaded_people < p.capacity_people){
+					if(job.type == "people" && loaded_people < p.capacity_people && ap.activated){
 						pwin.children(".job_sheet").append("<span class='selectable_job' data-job-id='" + job.id + "' data-plane-id='" + p.id + "''>" + job.name + " " + job.type + " " + ap.name + "</span><br />");
 					}
-					if(job.type == "cargo" && loaded_cargo < p.capacity_cargo){
+					if(job.type == "cargo" && loaded_cargo < p.capacity_cargo && ap.activated){
 						pwin.children(".job_sheet").append("<span class='selectable_job' data-job-id='" + job.id + "' data-plane-id='" + p.id + "''>" + job.name + " " + job.type + " " + ap.name + "</span><br />");
 					}
 				});
@@ -140,7 +179,7 @@ $(function(){
 				//give the user options where to send the plane.
 				var airports = engine.state_object.airports;
 				airports.forEach(function(airport){
-					if(airport != p.next_airport_object){
+					if(airport != p.next_airport_object && airport.activated){
 						pwin.children(".destinations").append("<span class='selectable_destination' data-plane-id='" + p.id + "' data-to-airport='" + airport.id + "' data-from-airport='" + p.next_airport_object.id + "'> "+airport.name+"</span><br />");
 					}
 				});
@@ -150,71 +189,6 @@ $(function(){
 			var money = engine.state_object.money;
 			$(".money_available").text(money);
 	}
-
-
-
-	/*setInterval(function(){
-		//display plane info.
-		$(".planes").html("");
-		var p = engine.state_object.planes;
-		p.forEach(function(plane){
-			
-
-			var html = "<div id='plane_"+plane.id+"' class='plane_summary'>Plane " + plane.id + " <br />Status: "+plane.status+" - " + plane.next_airport_object.name;
-			if(plane.status == "enroute"){
-				html += " arrives in " + lookup.seconds_until_arrival(plane.id);
-			}
-			html +="<div id='passenger_list_" + plane.id + "'>Passenger Manifest<br />";
-
-
-						if(plane.jobs_onboard.length > 0){
-							plane.jobs_onboard.forEach(function(job){
-								html += "&nbsp;&nbsp;"+job.type + " " + job.name + " Destination: " + lookup.lookup_airport_by_id(job.destination).name + "<br />";
-							});
-						}
-
-			html+="</div>"; //passenger list
-			if(plane.status == "grounded"){
-				//give the user options where to send the plane.
-				html +="<div id='destinations_available'>Destinations:<br />";
-				var airports = engine.state_object.airports;
-				airports.forEach(function(airport){
-					if(airport != plane.next_airport_object){
-						html +="<span class='selectable_destination' data-plane-id='" + plane.id + "' data-to-airport='" + airport.id + "' data-from-airport='" + plane.next_airport_object.id + "'> "+airport.name+"</span><br />";
-					}
-				});
-				html +="</div>"; //destinations
-
-				//and jobs to load on the plane.
-				html += "<div id='jobs_available'>Jobs:<br />";
-				var jobs = plane.jobs;
-				var loaded_people = 0;
-				var loaded_cargo = 0;
-				plane.jobs_onboard.forEach(function(job){
-					if(job.type == "people"){
-						loaded_people +=1;
-					}
-					if(job.type == "cargo"){
-						loaded_cargo +=1;
-					}
-				});
-				var ap_jobs = engine.get_jobs(plane.next_airport_id);
-				ap_jobs.forEach(function(job){
-					if(job.type == "people" && loaded_people < plane.capacity_people){
-						html +="<span class='selectable_job' data-job-id='" + job.id + "' data-plane-id='" + plane.id + "''>" + job.name + " " + job.type + "</span><br />";
-					}
-				});
-				html += "</div>"; //jobs div
-			}
-			html+="</div>"; //plane div
-			$(".planes").append(html);
-		});
-
-		//display money info.
-		var money = engine.state_object.money;
-		$(".money_available").text(money);
-
-	},500);*/
 
 	//events.
 	$(".selectable_destination").live('click',function(){
