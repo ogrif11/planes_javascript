@@ -43,8 +43,15 @@ $(function(){
 				$(".planes_window").append(h);
 
 				//if the div doesn't exist, there's probably no map marker either. add it.
-				var planeMarker = new google.maps.Marker();
-				planeMarker.setMap(map);
+				/*var planeMarker = new google.maps.Marker();
+				planeMarker.setMap(map);*/
+				var planeMarker = new MarkerWithLabel({
+					map: map,
+					labelText: p.id +"<img src='http://maps.google.com/mapfiles/ms/icons/plane.png' id='plane_marker_" + p.id + "' />",
+					labelClass: 'markerLabel',
+					labelVisible: true,
+					icon: "http://maps.google.com/mapfiles/ms/icons/z.png"
+				});
 				planeMarkers.push({plane_id:p.id,plane_marker:planeMarker});
 
 				//add a summary list item too.
@@ -60,6 +67,7 @@ $(function(){
 					thisMarker = marker;
 				}
 			});
+			$("#plane_marker_" + p.id).rotate(30);
 			var latlng = new google.maps.LatLng(p.position.latitude,p.position.longitude);
 			thisMarker.plane_marker.setPosition(latlng);
 
@@ -92,7 +100,7 @@ $(function(){
 					}else{
 						cargo_count+=1;
 					}
-					pwin.children(".passenger_manifest").append("--" + job.type + " " + job.name + " Destination: " + lookup.lookup_airport_by_id(job.destination).name + "<br />");
+					pwin.children(".passenger_manifest").append("<span class='passenger_on_plane' data-plane-id='" + p.id + "' data-job-id='" + job.id + "'>--" + job.type + " " + job.name + " Destination: " + lookup.lookup_airport_by_id(job.destination).name + "</span><br />");
 				});
 			}else{
 				pwin.children(".passenger_manifest").append("(No passengers aboard)");
@@ -227,7 +235,12 @@ $(function(){
 		var plane_id = $(this).attr('data-plane-id');
 		engine.assign_job_to_plane(plane_id, job_id);
 	});
-
+	$(".passenger_on_plane").live('click',function(){
+		//drop job off at airport if the plane is grounded.
+		var job_id = $(this).attr('data-job-id');
+			var plane_id = $(this).attr('data-plane-id');
+		engine.drop_job_at_this_airport(job_id,plane_id);
+	});
 	
 	$(".plane_summary_item").live('click',function(){
 		//show relevant plane detail card.

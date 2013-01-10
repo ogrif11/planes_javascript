@@ -264,6 +264,9 @@ function init_engine(debug){
 
 		engine.force_ui_update();
 	};
+	engine.drop_job_at_this_airport = function(job_id){
+
+	};
 	engine.transaction = function(amount,reason){
 		if(engine.state_object.money + amount < 0){
 			//No money!
