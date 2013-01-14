@@ -64,13 +64,23 @@
 		border: 1px solid #ccc;
 		padding: 3px;
 		border-radius: 3px;
+		background-color: #eee;
+	}
+	.instructions {
+		width: 300px;
+		height: 400px;
+		overflow: scroll;
+		font-size: 10pt;
 	}
 	#map_canvas { height: 100% }
+	.map_wrapper {
+		overflow:hidden;
+	}
 	</style>
 </head>
 <body>
 
-	<div class="instructions"></div>
+
 	<div class="game_window"><span class='show_map clickable button'>Show map</span>
 		$: <span class="money_available"></span>
 					<span class="cash_changed_hands"></span>
@@ -79,7 +89,24 @@
 		</ul>
 		<div class="planes_window">
 		</div>
+			<div class="instructions">
+		You own <span id="help_plane_count">4</span> planes and have agreements to use <span id="help_airport_count">3</span> airports for passage of people and cargo.<br />
+		Load your planes full and send them between airports to earn money. A plane won't make much money if it's not full.
+		You've only got $<span id="help_money">1000</span>, so be especially careful at the start.<br />
+		How to play<br />
+		Click a plane on the map or plane summary to bring up:
+		<ul>
+			<li>List of 'cargo' including people already on the plane</li>
+			<li>List of jobs waiting at the airport</li>
+			<li>List of airports this plane can fly to</li>
+		</ul>
+		Click the jobs waiting at the airport to load up your plane with what it can carry and click an airport to send it off! The map view will show you where the plane is.<br /><br />
+		<span class="clickable start_game button">Start Game</span>
+	</div>
+	<div class="map_wrapper" style="width:300px; height:400px">
 		<div class="map_window" id="map_canvas" style="width:300px; height:400px"></div>
+	</div>
+		
 		<div class="data_window">
 			
 		</div>

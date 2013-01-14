@@ -229,27 +229,40 @@ $(function(){
 			var id = $(this).attr('data-plane-id');
 			$(".plane_summary").hide();
 			hide_map();
+			hide_instructions();
 		$("#plane_window_"+id).show();
 	});
 	$(".show_map").live('click',function(){
+		show_map();
+		hide_instructions();
+	});
+	$(".start_game").live('click',function(){
+		hide_instructions();
 		show_map();
 	});
 	$(".plane_marker_image").live('click',function(){
 		//show relevant plane detail card.
 			var id = $(this).attr('data-plane-id');
 			$(".plane_summary").hide();
+			hide_instructions();
 			hide_map();
 		$("#plane_window_"+id).show();
 	});
 	show_map = function(){
-		$(".map_window").show();
+		//$(".map_wrapper").show();
 		$(".plane_summary").hide();
+		$(".map_wrapper").css({'height':'400px'});
 	};
 	hide_map = function(){
-		$(".map_window").hide();
+		$(".map_wrapper").css({'height':'0px'});
+	};
+	hide_instructions = function(){
+		$(".instructions").hide();
+		
 	};
 	//final setup
 	engine.force_ui_update();
+	//
 
 //set up map bounds to airports.
 			var lowest_lat = 0;
@@ -272,4 +285,5 @@ $(function(){
 			});
 			var latlngbounds = new google.maps.LatLngBounds(new google.maps.LatLng(lowest_lat, lowest_long),new google.maps.LatLng(highest_lat, highest_long));
 			map.fitBounds(latlngbounds);
+			hide_map();
 });
