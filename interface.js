@@ -36,6 +36,13 @@ $(function(){
 	engine.callbacks.no_money = function(amount,reason){
 		alert('you ran out of money - wait for money or start again. Amount needed to continue: ' + amount);
 	};
+	function get_image(type){
+		if(type == "people"){
+			return "<img src='personIcon.gif'>";
+		}else{
+			return "<img src='box_48.png' style='height: 16px; width: 16px;'>";
+		}
+	}
 	function update_airport_status(a){
 		//find marker and remove.
 		for(var i=airportMarkers.length-1;i>=0;i--){
@@ -80,7 +87,7 @@ $(function(){
 				planeMarker.setMap(map);*/
 				var planeMarker = new MarkerWithLabel({
 					map: map,
-					labelText: "<img class='plane_marker_image' src='http://maps.google.com/mapfiles/ms/icons/plane.png' id='plane_marker_" + p.id + "' />" + p.id,
+					labelText: "<img class='plane_marker_image' data-plane-id='" + p.id + "' src='http://maps.google.com/mapfiles/ms/icons/plane.png' id='plane_marker_" + p.id + "' />" + p.id,
 					labelClass: 'markerLabel',
 					labelVisible: true,
 					icon: "http://maps.google.com/mapfiles/ms/icons/z.png"
@@ -88,7 +95,7 @@ $(function(){
 				planeMarkers.push({plane_id:p.id,plane_marker:planeMarker});
 
 				//add a summary list item too.
-				var li = "<li id='plane_summary_" + p.id + "' class='plane_summary_item' data-plane-id='" + p.id + "'></li>";
+				var li = "<li id='plane_summary_" + p.id + "' class='plane_summary_item clickable' data-plane-id='" + p.id + "'></li>";
 				$(".plane_list").append(li);
 
 				//hide all cards again.
@@ -121,7 +128,6 @@ $(function(){
 							var run =p.next_airport_object.position.longitude- p.last_airport_object.position.longitude;
 							var rotation_angle = lookup.get_angle_to_rotate(rise,run);
 							$("#plane_marker_" + p.id).rotate(rotation_angle);
-							engine.debug("Plane " + p.id + " rotating " + rotation_angle);
 			}else{
 				pwin.children(".arrives_in").text("");
 				pwin.children(".destination").text("At " + p.next_airport_object.name);
@@ -139,13 +145,13 @@ $(function(){
 					}else{
 						cargo_count+=1;
 					}
-					pwin.children(".passenger_manifest").append("<span class='passenger_on_plane' data-plane-id='" + p.id + "' data-job-id='" + job.id + "'>--" + job.type + " " + job.name + " Destination: " + lookup.lookup_airport_by_id(job.destination).name + "</span><br />");
+					pwin.children(".passenger_manifest").append("<span class='passenger_on_plane clickable' data-plane-id='" + p.id + "' data-job-id='" + job.id + "'>"  + get_image(job.type) + " " + " " + job.name + " Destination: " + lookup.lookup_airport_by_id(job.destination).name + "</span><br />");
 				});
 			}else{
 				pwin.children(".passenger_manifest").append("(No passengers aboard)");
 			}
-			sum_text += " " + passenger_count + "P " + cargo_count + "C";
-			psum.text(sum_text);
+			sum_text += " " + passenger_count + get_image("people") + " " + "&nbsp; " + cargo_count+ get_image("cargo");
+			psum.html(sum_text);
 			//jobsheet
 			pwin.children(".job_sheet").text("");
 			var loaded_people = 0;
@@ -166,10 +172,10 @@ $(function(){
 				ap_jobs.forEach(function(job){
 					var ap = lookup.lookup_airport_by_id(job.destination);
 					if(job.type == "people" && loaded_people < p.capacity_people && ap.activated){
-						pwin.children(".job_sheet").append("<span class='selectable_job' data-job-id='" + job.id + "' data-plane-id='" + p.id + "''>" + job.name + " " + job.type + " " + ap.name + "</span><br />");
+						pwin.children(".job_sheet").append("<span class='selectable_job clickable' data-job-id='" + job.id + "' data-plane-id='" + p.id + "''>" + get_image(job.type) + " " +job.name + " " +  ap.name + "</span><br />");
 					}
 					if(job.type == "cargo" && loaded_cargo < p.capacity_cargo && ap.activated){
-						pwin.children(".job_sheet").append("<span class='selectable_job' data-job-id='" + job.id + "' data-plane-id='" + p.id + "''>" + job.name + " " + job.type + " " + ap.name + "</span><br />");
+						pwin.children(".job_sheet").append("<span class='selectable_job clickable' data-job-id='" + job.id + "' data-plane-id='" + p.id + "''>" + get_image(job.type) + " " + job.name + " " + ap.name + "</span><br />");
 					}
 				});
 
@@ -180,7 +186,7 @@ $(function(){
 				var airports = engine.state_object.airports;
 				airports.forEach(function(airport){
 					if(airport != p.next_airport_object && airport.activated){
-						pwin.children(".destinations").append("<span class='selectable_destination' data-plane-id='" + p.id + "' data-to-airport='" + airport.id + "' data-from-airport='" + p.next_airport_object.id + "'> "+airport.name+"</span><br />");
+						pwin.children(".destinations").append("<span class='selectable_destination clickable' data-plane-id='" + p.id + "' data-to-airport='" + airport.id + "' data-from-airport='" + p.next_airport_object.id + "'> "+airport.name+"</span><br />");
 					}
 				});
 			}
@@ -202,7 +208,9 @@ $(function(){
 		var flight_time = lookup.get_flight_time(flight_distance, plane);
 		var flight_cost = lookup.get_flight_cost(flight_distance, plane);
 		engine.debug(from_airport.name + " to " + to_airport.name + " is " + flight_distance + " will take " + flight_time + " and will cost " + flight_cost);
-		engine.send_aircraft(plane_id,to_airport_id);
+		if(engine.send_aircraft(plane_id,to_airport_id)){
+					show_map();
+		}
 	});
 	$(".selectable_job").live('click',function(){
 		var job_id = $(this).attr('data-job-id');
@@ -220,12 +228,26 @@ $(function(){
 		//show relevant plane detail card.
 			var id = $(this).attr('data-plane-id');
 			$(".plane_summary").hide();
-		
+			hide_map();
 		$("#plane_window_"+id).show();
-		//change colour of marker.
 	});
-
-
+	$(".show_map").live('click',function(){
+		show_map();
+	});
+	$(".plane_marker_image").live('click',function(){
+		//show relevant plane detail card.
+			var id = $(this).attr('data-plane-id');
+			$(".plane_summary").hide();
+			hide_map();
+		$("#plane_window_"+id).show();
+	});
+	show_map = function(){
+		$(".map_window").show();
+		$(".plane_summary").hide();
+	};
+	hide_map = function(){
+		$(".map_window").hide();
+	};
 	//final setup
 	engine.force_ui_update();
 

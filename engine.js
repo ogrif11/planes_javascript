@@ -143,13 +143,21 @@ function init_engine(debug){
 					//is it time to generate jobs?
 					if(engine.state_object.next_job_generate < engine.gameTime){
 						//time to generate new jobs.
-							
+						engine.timeout_jobs();
 						engine.generate_jobs();
 						engine.state_object.next_job_generate = engine.gameTime + engine.state_object.job_generate_wait_time;
 						if(typeof(engine.callbacks.new_jobs_callback) == "function"){engine.callbacks.new_jobs_callback();}
 					}
 				}
 			state.metadata.last_logic_run = now.getTime();
+		}
+	};
+	engine.timeout_jobs = function(){
+		for(var i=engine.state_object.jobs.length-1; i >=0;i--){
+			//job has not been taken, and has been timed out.
+			if(jobs[i].taken === false && jobs.timeout < engine.gameTime){
+				engine.state_object.jobs.splice(i,1);
+			}
 		}
 	};
 	engine.generate_jobs = function(){
@@ -170,18 +178,17 @@ function init_engine(debug){
 										var people_jobs_to_generate = from_airport.sizeMillions * to_airport.sizeMillions * 0.07 * getRandomInt(0,3);
 										var cargo_jobs_to_generate = from_airport.sizeMillions * to_airport.sizeMillions * 0.07 * getRandomInt(0,3);
 										var flight_distance = lookup.get_distance(from_airport.position, to_airport.position);
-											
-										for(i = 0; i < people_jobs_to_generate;i++){
+											for(i = 0; i < people_jobs_to_generate;i++){
 											var fn = people_first_names[Math.floor(Math.random()*people_first_names.length)];
 											var ln = people_last_names[Math.floor(Math.random()*people_last_names.length)];
 											engine.state_object.metadata.jobs_created +=1;
-											job = {"taken":false,"start_airport":from_airport.id, "id":engine.state_object.metadata.jobs_created,"type":"people",name:fn + " " + ln,gender:"NA",cash_payment:lookup.lookup_flight_retail_cost(flight_distance),destination:to_airport.id};
+											job = {"timeout":engine.gameTime + (engine.state_object.job_generate_wait_time * 3),"taken":false,"start_airport":from_airport.id, "id":engine.state_object.metadata.jobs_created,"type":"people",name:fn + " " + ln,gender:"NA",cash_payment:lookup.lookup_flight_retail_cost(flight_distance),destination:to_airport.id};
 											engine.state_object.jobs.push(job);
 										}
 										for(i = 0; i < cargo_jobs_to_generate;i++){
 											var cargoname = cargo_names[Math.floor(Math.random()*cargo_names.length)];
 											engine.state_object.metadata.jobs_created +=1;
-											job = {"taken":false,"start_airport":from_airport.id, "id":engine.state_object.metadata.jobs_created,"type":"cargo",name:cargoname,gender:"NA",cash_payment:lookup.lookup_flight_retail_cost(flight_distance),destination:to_airport.id};
+											job = {"timeout":engine.gameTime + (engine.state_object.job_generate_wait_time * 3),"taken":false,"start_airport":from_airport.id, "id":engine.state_object.metadata.jobs_created,"type":"cargo",name:cargoname,gender:"NA",cash_payment:lookup.lookup_flight_retail_cost(flight_distance),destination:to_airport.id};
 											engine.state_object.jobs.push(job);
 										}
 									}
@@ -269,8 +276,24 @@ function init_engine(debug){
 
 		engine.force_ui_update();
 	};
-	engine.drop_job_at_this_airport = function(job_id){
-
+	engine.drop_job_at_this_airport = function(job_id, plane_id){
+		var job = lookup.lookup_job_by_id(job_id);
+		var plane = lookup.lookup_plane_by_id(plane_id);
+		if(plane.status != "grounded"){
+			engine.debug("Can't drop passenger here.");
+		}else{
+			engine.debug("Have to drop job " + job.name + " at airport " + plane.next_airport_object.name);
+			job.taken = false;
+			for(var i=plane.jobs_onboard.length-1; i >=0;i--){
+				var j = plane.jobs_onboard[i];
+				if(j.id == job.id){
+					engine.debug("Unloading" + j.name + " for layover.");
+					plane.jobs_onboard.splice(i,1);
+				}
+			}
+			engine.force_ui_update();
+		}
+		
 	};
 	engine.transaction = function(amount,reason){
 		if(engine.state_object.money + amount < 0){

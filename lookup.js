@@ -10,7 +10,7 @@ lookup.lookup_airport_by_id = function(id){
 		return ap;
 	};
 	lookup.get_angle_to_rotate = function(rise, run){
-		engine.debug(rise + "/" + run);
+		
 		var angle = (Math.atan(rise/run) *(180/ Math.PI));
 		if(rise > 0){
 			return (angle -90) * -1;
