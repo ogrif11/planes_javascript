@@ -52,12 +52,6 @@ function init_engine(debug){
 			engine.callbacks.logging_callback(outputstring);
 		}
 	};
-	engine.save_state = function(){
-		sessionStorage.setObject("game_state",engine.state_object);
-	};
-	engine.load_state = function(){
-
-	};
 	engine.prepare_simulation = function(state_object){
 		if(isArray(state_object)){
 			//make a 'new game' state.
@@ -156,8 +150,6 @@ function init_engine(debug){
 					}
 				}
 			state.metadata.last_logic_run = now.getTime();
-			//save state
-			engine.save_state();
 		}
 	};
 	engine.timeout_jobs = function(){
