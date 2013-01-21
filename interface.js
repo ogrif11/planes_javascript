@@ -197,7 +197,8 @@ $(function(){
 	}
 
 	//events.
-	$(".selectable_destination").live('click',function(){
+		$(document).on('click','.selectable_destination',function(){
+	//$(".selectable_destination").on('click',function(){
 		var from_airport_id = $(this).attr('data-from-airport');
 		var to_airport_id = $(this).attr('data-to-airport');
 		var plane_id = parseInt($(this).attr('data-plane-id'),10);
@@ -212,19 +213,19 @@ $(function(){
 					show_map();
 		}
 	});
-	$(".selectable_job").live('click',function(){
+		$(document).on('click','.selectable_job',function(){
 		var job_id = $(this).attr('data-job-id');
 		var plane_id = $(this).attr('data-plane-id');
 		engine.assign_job_to_plane(plane_id, job_id);
 	});
-	$(".passenger_on_plane").live('click',function(){
+	$(document).on('click','.passenger_on_plane',function(){
 		//drop job off at airport if the plane is grounded.
 		var job_id = $(this).attr('data-job-id');
 			var plane_id = $(this).attr('data-plane-id');
 		engine.drop_job_at_this_airport(job_id,plane_id);
 	});
 	
-	$(".plane_summary_item").live('click',function(){
+	$(document).on('click','.plane_summary_item',function(){
 		//show relevant plane detail card.
 			var id = $(this).attr('data-plane-id');
 			$(".plane_summary").hide();
@@ -232,15 +233,18 @@ $(function(){
 			hide_instructions();
 		$("#plane_window_"+id).show();
 	});
-	$(".show_map").live('click',function(){
+	$(document).on('click','.show_map',function(){
+	//$(".show_map").on('click',function(){
 		show_map();
 		hide_instructions();
 	});
-	$(".start_game").live('click',function(){
+	$(document).on('click','.start_game',function(){
+	//$(".start_game").on('click',function(){
 		hide_instructions();
 		show_map();
 	});
-	$(".plane_marker_image").live('click',function(){
+	$(document).on('click','.plane_marker_image',function(){
+	//$(".plane_marker_image").on('click',function(){
 		//show relevant plane detail card.
 			var id = $(this).attr('data-plane-id');
 			$(".plane_summary").hide();
