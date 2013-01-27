@@ -1,14 +1,21 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
 	<title>Document</title>
 	<!--interface uses jquery -->
 	<script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>
+	<script src="jQueryRotateCompressed.2.2.js"></script>
 	<script src="helpers.js"></script>
 	<script src="lookup.js"></script>
+ <script type="text/javascript"
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkQdgexG_Ve4w4LMbG10xb85pWDnruimo&sensor=false">
+    </script>
+  <script type="text/javascript" src="markerwithlabel.js">
+    </script>
 	<script src="engine.js"></script>
 	<script src="interface.js"></script>
+
 	<style type="text/css">
 	body {
 		font-family: Arial, Helvetica;
@@ -18,6 +25,8 @@
 	border: 1px solid #ccc;
 	color: #666;
 	padding: 5px;
+	width: 300px; float: left;
+	height: 400px;overflow: auto;
 	}
 	.data-wrapper {
 		padding: 5px;
@@ -25,17 +34,84 @@
 	.emphasis {
 		font-weight: bold;
 	}
+	.data_window {
+		clear:both;
+	}
+	.markerLabel {
+		font-size: 8px;
+		position:relative;
+		top:-16px;
+		left:-16px;
+		z-index: 1000;
+	}
+	.airportLabel {
+		position:relative;
+		top:-36px;
+		left:-16px;
+		z-index: 999;
+
+	}
+	.plane_marker_image {
+	}
+	.airport_marker_image {
+
+	}
+	.clickable {
+		color: #212153;
+		cursor: pointer;
+	}
+	.button {
+		border: 1px solid #ccc;
+		padding: 3px;
+		border-radius: 3px;
+		background-color: #eee;
+	}
+	.instructions {
+		width: 300px;
+		height: 400px;
+		overflow: scroll;
+		font-size: 10pt;
+	}
+	#map_canvas { height: 100% }
+	.map_wrapper {
+		overflow:hidden;
+	}
 	</style>
 </head>
 <body>
-	<div class="game_window">
-	<div class="planes_window">
+
+
+	<div class="game_window"><span class='show_map clickable button'>Show map</span>
+		$: <span class="money_available"></span>
+					<span class="cash_changed_hands"></span>
+		<ul class="plane_list">
+			
+		</ul>
+		<div class="planes_window">
+		</div>
+			<div class="instructions">
+		You own <span id="help_plane_count">4</span> planes and have agreements to use <span id="help_airport_count">3</span> airports for passage of people and cargo.<br />
+		Load your planes full and send them between airports to earn money. A plane won't make much money if it's not full.
+		You've only got $<span id="help_money">1000</span>, so be especially careful at the start.<br />
+		How to play<br />
+		Click a plane on the map or plane summary to bring up:
+		<ul>
+			<li>List of 'cargo' including people already on the plane</li>
+			<li>List of jobs waiting at the airport</li>
+			<li>List of airports this plane can fly to</li>
+		</ul>
+		Click the jobs waiting at the airport to load up your plane with what it can carry and click an airport to send it off! The map view will show you where the plane is.<br /><br />
+		<span class="clickable start_game button">Start Game</span>
 	</div>
-		<div class="planes"></div><br />
-		Cash on Hand: <div class="money_available"></div>
-		<div class="last_log"></div>
-		<div class="log" style="height: 200px; overflow: scroll"></div>
+	<div class="map_wrapper" style="width:300px; height:400px">
+		<div class="map_window" id="map_canvas" style="width:300px; height:400px"></div>
+	</div>
+		
+		<div class="data_window">
+			
+		</div>
 	</div>
 	
+	<div class="log" style="height: 200px; overflow: scroll"></div>
 </body>
 </html>
