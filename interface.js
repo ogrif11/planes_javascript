@@ -38,7 +38,7 @@ $(function(){
 	};
 	function get_image(type,use_image_tag){
         var person_src = "personIcon.gif";
-        var cargo_src= = "box_48.png";
+        var cargo_src= "box_48.png";
         var output_image = "";
 		if(type == "people"){
 			output_image = person_src;
