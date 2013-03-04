@@ -46,7 +46,7 @@ $(function(){
             output_image = cargo_src;
 			return "<img src='' style='height: 16px; width: 16px;'>";
 		}
-        if(image_tag){
+        if(typeof(image_tag) != "undefined" && image_tag == true){
             return "<img src='" + output_image + "' style='height: 16px; width: 16px;'>";
         }else{
             return  output_image;
