@@ -95,7 +95,7 @@ $(function(){
 				planeMarkers.push({plane_id:p.id,plane_marker:planeMarker});
 
 				//add a summary list item too.
-				var li = "<li id='plane_summary_" + p.id + "' class='plane_summary_item clickable' data-plane-id='" + p.id + "'><span class='summary_id'></span><span class='summary_status'></span> <span class='summary_airport'></span> <span class='summary_arrival_delta'></span> " + get_image("people") + "<span class='summary_people'></span> " + get_image("cargo") + "<span class='summary_cargo'></span></li>";
+				var li = "<li id='plane_summary_" + p.id + "' class='plane_summary_item clickable' data-plane-id='" + p.id + "'><span class='summary_id'></span> <span class='summary_status'></span> <span class='summary_airport'></span> <span class='summary_arrival_delta'></span> " + get_image("people") + "<span class='summary_people'></span> " + get_image("cargo") + "<span class='summary_cargo'></span></li>";
 				$(".plane_list").append(li);
 
 				//hide all cards again.
@@ -123,7 +123,7 @@ $(function(){
 			if(p.status == "enroute"){
 				pwin.children(".arrives_in").text("Arrives in " + lookup.seconds_until_arrival(p.id));
 				pwin.children(".destination").text("Destination " + p.next_airport_object.name);
-            psum.children(".summary_arrival_delta").text(" in " + lookup.seconds_until_arrival(p.id));
+            psum.children(".summary_arrival_delta").text("arrives in " + lookup.seconds_until_arrival(p.id));
 				var rise = p.next_airport_object.position.latitude - p.last_airport_object.position.latitude;
 							var run =p.next_airport_object.position.longitude- p.last_airport_object.position.longitude;
 							var rotation_angle = lookup.get_angle_to_rotate(rise,run);
@@ -145,7 +145,7 @@ $(function(){
 					}else{
 						cargo_count+=1;
 					}
-					pwin.children(".passenger_manifest").append("<span class='passenger_on_plane clickable' data-plane-id='" + p.id + "' data-job-id='" + job.id + "'>"  + get_image(job.type) + " " + " " + job.name + " Destination: " + lookup.lookup_airport_by_id(job.destination).name + "</span><br />");
+					pwin.children(".passenger_manifest").append("<span class='passenger_on_plane clickable " + get_image(job.type) + "' data-plane-id='" + p.id + "' data-job-id='" + job.id + "'>" + " " + job.name + " Destination: " + lookup.lookup_airport_by_id(job.destination).name + "</span><br />");
 				});
 			}else{
 				pwin.children(".passenger_manifest").append("(No passengers aboard)");
