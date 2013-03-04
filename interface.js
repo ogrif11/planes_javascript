@@ -95,7 +95,7 @@ $(function(){
 				planeMarkers.push({plane_id:p.id,plane_marker:planeMarker});
 
 				//add a summary list item too.
-				var li = "<li id='plane_summary_" + p.id + "' class='plane_summary_item clickable' data-plane-id='" + p.id + "'><span class='summary_id'></span><span class='summary_status'></span><span class='summary_airport'></span>" + get_image("people") + "<span class='summary_people'></span>" + get_image("cargo") + "<span class='summary_cargo'></span></li>";
+				var li = "<li id='plane_summary_" + p.id + "' class='plane_summary_item clickable' data-plane-id='" + p.id + "'><span class='summary_id'></span><span class='summary_status'></span> <span class='summary_airport'></span> <span class='summary_arrival_delta'></span> " + get_image("people") + "<span class='summary_people'></span> " + get_image("cargo") + "<span class='summary_cargo'></span></li>";
 				$(".plane_list").append(li);
 
 				//hide all cards again.
@@ -116,7 +116,6 @@ $(function(){
 			var psum = $("#plane_summary_" + p.id);
 			//status, arrival time, destination/location
 			pwin.children(".plane_status").text(p.status);
-			//psum.html("");
             psum.children(".summary_id").text(p.id);
             psum.children(".summary_status").text(p.status);
             psum.children(".summary_airport").text(p.airport);
@@ -124,7 +123,7 @@ $(function(){
 			if(p.status == "enroute"){
 				pwin.children(".arrives_in").text("Arrives in " + lookup.seconds_until_arrival(p.id));
 				pwin.children(".destination").text("Destination " + p.next_airport_object.name);
-			//	sum_text +=" in " + lookup.seconds_until_arrival(p.id);
+            psum.children(".summary_arrival_delta").text(" in " + lookup.seconds_until_arrival(p.id));
 				var rise = p.next_airport_object.position.latitude - p.last_airport_object.position.latitude;
 							var run =p.next_airport_object.position.longitude- p.last_airport_object.position.longitude;
 							var rotation_angle = lookup.get_angle_to_rotate(rise,run);
