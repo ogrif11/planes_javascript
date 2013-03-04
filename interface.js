@@ -151,8 +151,8 @@ $(function(){
 			}else{
 				pwin.children(".passenger_manifest").append("(No passengers aboard)");
 			}
-			psum.children(".people").text(passenger_count);
-            psum.children(".cargo").text(cargo_count);
+			psum.children(".summary_people").text(passenger_count);
+            psum.children(".summary_cargo").text(cargo_count);
             //psum.html(sum_text);
 			//jobsheet
 			pwin.children(".job_sheet").text("");
