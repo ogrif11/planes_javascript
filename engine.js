@@ -264,6 +264,7 @@ function init_engine(debug){
 		if(typeof(engine.callbacks.plane_status_changed) == "function"){
 			engine.callbacks.plane_status_changed(plane);
 		}
+        return true;
 	};
 	engine.assign_job_to_plane = function(plane_id,job_id){
 		var job = lookup.lookup_job_by_id(job_id);
