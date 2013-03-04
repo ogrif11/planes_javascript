@@ -49,7 +49,7 @@ $(function(){
         if(typeof(image_tag) != "undefined" && image_tag == true){
             return "<img src='" + output_image + "' style='height: 16px; width: 16px;'>";
         }else{
-            return  output_image;
+            return  output_image.substr(0,person_src.indexOf("."));
         }
 	}
 	function update_airport_status(a){
