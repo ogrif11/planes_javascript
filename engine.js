@@ -153,7 +153,8 @@ function init_engine(debug){
 		}
 	};
 	engine.timeout_jobs = function(){
-		for(var i=engine.state_object.jobs.length-1; i >=0;i--){
+        var jobs = engine.state_object.jobs;
+		for(var i=jobs.length-1; i >=0;i--){
 			//job has not been taken, and has been timed out.
 			if(jobs[i].taken === false && jobs.timeout < engine.gameTime){
 				engine.state_object.jobs.splice(i,1);
