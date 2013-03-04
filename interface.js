@@ -36,12 +36,21 @@ $(function(){
 	engine.callbacks.no_money = function(amount,reason){
 		alert('you ran out of money - wait for money or start again. Amount needed to continue: ' + amount);
 	};
-	function get_image(type){
+	function get_image(type,use_image_tag){
+        var person_src = "personIcon.gif";
+        var cargo_src= = "box_48.png";
+        var output_image = "";
 		if(type == "people"){
-			return "<img src='personIcon.gif'>";
+			output_image = person_src;
 		}else{
-			return "<img src='box_48.png' style='height: 16px; width: 16px;'>";
+            output_image = cargo_src;
+			return "<img src='' style='height: 16px; width: 16px;'>";
 		}
+        if(image_tag){
+            return "<img src='" + output_image + "' style='height: 16px; width: 16px;'>";
+        }else{
+            return  output_image;
+        }
 	}
 	function update_airport_status(a){
 		//find marker and remove.
@@ -95,7 +104,7 @@ $(function(){
 				planeMarkers.push({plane_id:p.id,plane_marker:planeMarker});
 
 				//add a summary list item too.
-				var li = "<li id='plane_summary_" + p.id + "' class='plane_summary_item clickable' data-plane-id='" + p.id + "'><span class='summary_id'></span> <span class='summary_status'></span> <span class='summary_airport'></span> <span class='summary_arrival_delta'></span> " + get_image("people") + "<span class='summary_people'></span> " + get_image("cargo") + "<span class='summary_cargo'></span></li>";
+				var li = "<li id='plane_summary_" + p.id + "' class='plane_summary_item clickable' data-plane-id='" + p.id + "'><span class='summary_id'></span> <span class='summary_status'></span> <span class='summary_airport'></span> <span class='summary_arrival_delta'></span> " + get_image("people",true) + "<span class='summary_people'></span> " + get_image("cargo",true) + "<span class='summary_cargo'></span></li>";
 				$(".plane_list").append(li);
 
 				//hide all cards again.
@@ -145,7 +154,7 @@ $(function(){
 					}else{
 						cargo_count+=1;
 					}
-					pwin.children(".passenger_manifest").append("<span class='passenger_on_plane clickable " + get_image(job.type) + "' data-plane-id='" + p.id + "' data-job-id='" + job.id + "'>" + " " + job.name + " Destination: " + lookup.lookup_airport_by_id(job.destination).name + "</span><br />");
+					pwin.children(".passenger_manifest").append("<span class='passenger_on_plane clickable " + get_image(job.type,false) + "' data-plane-id='" + p.id + "' data-job-id='" + job.id + "'>" + " " + job.name + " Destination: " + lookup.lookup_airport_by_id(job.destination).name + "</span><br />");
 				});
 			}else{
 				pwin.children(".passenger_manifest").append("(No passengers aboard)");
@@ -173,10 +182,10 @@ $(function(){
 				ap_jobs.forEach(function(job){
 					var ap = lookup.lookup_airport_by_id(job.destination);
 					if(job.type == "people" && loaded_people < p.capacity_people && ap.activated){
-						pwin.children(".job_sheet").append("<span class='selectable_job clickable' data-job-id='" + job.id + "' data-plane-id='" + p.id + "''>" + get_image(job.type) + " " +job.name + " " +  ap.name + "</span><br />");
+						pwin.children(".job_sheet").append("<span class='selectable_job clickable' data-job-id='" + job.id + "' data-plane-id='" + p.id + "''>" + get_image(job.type,true) + " " +job.name + " " +  ap.name + "</span><br />");
 					}
 					if(job.type == "cargo" && loaded_cargo < p.capacity_cargo && ap.activated){
-						pwin.children(".job_sheet").append("<span class='selectable_job clickable' data-job-id='" + job.id + "' data-plane-id='" + p.id + "''>" + get_image(job.type) + " " + job.name + " " + ap.name + "</span><br />");
+						pwin.children(".job_sheet").append("<span class='selectable_job clickable' data-job-id='" + job.id + "' data-plane-id='" + p.id + "''>" + get_image(job.type,true) + " " + job.name + " " + ap.name + "</span><br />");
 					}
 				});
 
