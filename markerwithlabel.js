@@ -278,7 +278,7 @@ MarkerLabel_.prototype.draw = function () {
  * @param {MarkerWithLabelOptions} [opt_options] The optional parameters.
  */
 function MarkerWithLabel(opt_options) {
-  opt_options.labelText = opt_options.labelText || "";
+  opt_options.labelText = opt_options.labelText || "Toowoomba";
   opt_options.labelClass = opt_options.labelClass || "markerLabels";
   opt_options.labelStyle = opt_options.labelStyle || {};
   opt_options.labelZIndex = opt_options.labelZIndex || null;
