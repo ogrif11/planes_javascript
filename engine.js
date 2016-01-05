@@ -212,7 +212,7 @@ function init_engine(debug){
 		var a = game_state.airports;
 		a.push({"id":1,"name":"Sydney","sizeMillions":5,"activated":true,"jobs":[],position:{latitude:-33.946884,longitude:151.181359}});
 		a.push({"id":2,"name":"Brisbane","sizeMillions":2,"activated":true,"jobs":[],position:{latitude:-27.392498,longitude:153.116455}});
-		a.push({"id":3,"name":"Adelaide","sizeMillions":2,"activated":true,"jobs":[],position:{latitude:-34.948498,longitude:138.530817}});
+		a.push({"id":3,"name":"Adelaide","sizeMillions":2,"activated":true,"jobs":[],position:{latitude:-34.948498,longitude:138.530816}});
 		a.push({"id":4,"name":"Toowoomba","sizeMillions":1,"activated":true,"jobs":[],position:{latitude:-27.392498,longitude:151.9538600}});
 		a.push({"id":5,"name":"Melbourne","sizeMillions":1,"activated":true,"jobs":[],position:{latitude:-37.8140000,longitude:144.9633200}});
 		var ps = game_state.planes;
